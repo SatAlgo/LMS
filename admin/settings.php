@@ -11,7 +11,17 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 $message = "";
 
 if (isset($_POST['update_settings'])) {
-    // 1. Handle regular inputs (Limits & Fines)
+    // 1. First, get the current/new values for the history log
+    $st_fine = mysqli_real_escape_string($connection, $_POST['config']['fine_rate']);
+    $lt_fine = mysqli_real_escape_string($connection, $_POST['config']['fine_rate_late']);
+    $loan_p = mysqli_real_escape_string($connection, $_POST['config']['default_loan_period']);
+
+    // 2. Insert into History Table (This creates the timeline for 10x + 5y logic)
+    $history_query = "INSERT INTO fine_settings_history (standard_fine, late_fine, default_loan_period, changed_at) 
+                      VALUES ('$st_fine', '$lt_fine', '$loan_p', NOW())";
+    mysqli_query($connection, $history_query);
+
+    // 3. Handle regular inputs (Existing logic)
     foreach ($_POST['config'] as $key => $value) {
         $key = mysqli_real_escape_string($connection, $key);
         $value = mysqli_real_escape_string($connection, $value);
@@ -92,7 +102,7 @@ while ($row = mysqli_fetch_assoc($res)) {
                     
                     <h5 class="font-weight-bold text-primary mb-3"><i class="fas fa-rupee-sign mr-1"></i>Fine & Issue Rules</h5>
                     <div class="row">
-                        <div class="col-md-4 form-group">
+                        <!-- <div class="col-md-4 form-group">
                             <label class="font-weight-bold small text-uppercase text-muted">Standard Fine (₹/day)</label>
                             <input type="number" name="config[fine_rate]" class="form-control" value="<?php echo $settings['fine_rate'] ?? 2; ?>" required>
                             <small class="text-muted">Rate for first 15 days.</small>
@@ -102,7 +112,20 @@ while ($row = mysqli_fetch_assoc($res)) {
                             <label class="font-weight-bold small text-uppercase text-muted">Late Fine (₹/day)</label>
                             <input type="number" name="config[fine_rate_late]" class="form-control" value="<?php echo $settings['fine_rate_late'] ?? 5; ?>" required>
                             <small class="text-muted">Rate after 15 days.</small>
+                        </div> -->
+
+                        <div class="col-md-4 form-group">
+                            <label class="font-weight-bold small text-uppercase text-muted">Standard Fine (₹/day)</label>
+                            <input type="number" name="config[fine_rate]" class="form-control" value="<?php echo $settings['fine_rate'] ?? 2; ?>" required>
+                            <small class="text-muted">Rate for first <?php echo $settings['default_loan_period'] ?? 14; ?> days.</small>
                         </div>
+
+                        <div class="col-md-4 form-group">
+                            <label class="font-weight-bold small text-uppercase text-muted">Late Fine (₹/day)</label>
+                            <input type="number" name="config[fine_rate_late]" class="form-control" value="<?php echo $settings['fine_rate_late'] ?? 5; ?>" required>
+                            <small class="text-muted">Rate after <?php echo $settings['default_loan_period'] ?? 14; ?> days.</small>
+                        </div>
+                        
                         <div class="col-md-4 form-group">
                             <label class="font-weight-bold small text-uppercase text-muted">Max Books Limit</label>
                             <input type="number" name="config[issue_limit]" class="form-control" value="<?php echo $settings['issue_limit'] ?? 3; ?>" required>

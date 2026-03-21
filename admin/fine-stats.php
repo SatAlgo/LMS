@@ -2,6 +2,7 @@
 session_start();
 require_once "../includes/config.php";
 require_once "../includes/header.php";
+require_once "../includes/functions.php";
 
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../index.php");
@@ -29,8 +30,12 @@ $overdue_res = mysqli_query($connection, "SELECT ib.* FROM issued_books ib WHERE
 $total_projected_fine = 0;
 $overdue_count = mysqli_num_rows($overdue_res);
 while($ob = mysqli_fetch_assoc($overdue_res)) {
-    $days = floor((strtotime(date("Y-m-d")) - strtotime($ob['due_date'])) / 86400);
-    $f = ($days <= 15) ? ($days * $fine_low) : ((15 * $fine_low) + (($days - 15) * $fine_high));
+    // $days = floor((strtotime(date("Y-m-d")) - strtotime($ob['due_date'])) / 86400);
+    // $f = ($days <= 15) ? ($days * $fine_low) : ((15 * $fine_low) + (($days - 15) * $fine_high));
+    // $total_projected_fine += $f;
+
+    // New "Fair" Logic:
+    $f = getFairFine($ob['due_date'], date("Y-m-d"), $connection);
     $total_projected_fine += $f;
 }
 

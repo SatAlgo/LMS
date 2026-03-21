@@ -110,6 +110,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
             href="<?php echo BASE_URL; ?>admin/manage-staff.php">
                 <i class="fas fa-shield-alt"></i> Staff
             </a>
+
+            <a class="nav-link <?php echo ($current_page == 'book-analysis.php') ? 'active-link' : ''; ?>" 
+            href="<?php echo BASE_URL; ?>admin/book-analysis.php">
+                <i class="fas fa-microscope"></i> Inventory Analysis
+            </a>
             
             <a class="nav-link <?php echo ($current_page == 'settings.php') ? 'active-link' : ''; ?>" 
             href="<?php echo BASE_URL; ?>admin/settings.php">

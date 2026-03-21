@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once "../includes/config.php";
+require_once "../includes/functions.php";
 require_once "../includes/header.php";
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -47,7 +48,8 @@ if (isset($_GET['send_mail'])) {
     $data = mysqli_fetch_assoc($q);
     if ($data) {
         $today = new DateTime(); $due = new DateTime($data['due_date']); $overdue = ($today > $due);
-        $fine = $overdue ? ($due->diff($today)->days * $fine_rate) : 0;
+        // $fine = $overdue ? ($due->diff($today)->days * $fine_rate) : 0;
+        $fine = $overdue ? getFairFine($data['due_date'], date('Y-m-d'), $connection) : 0;
         if (sendLibraryReminder($data['email'], $data['name'], $data['title'], date('d M Y', strtotime($data['due_date'])), $overdue, $fine)) {
             $_SESSION['mail_msg'] = "Reminder sent to " . $data['name'];
         }
@@ -59,7 +61,7 @@ if (isset($_POST['bulk_mail'])) {
     $q = mysqli_query($connection, "SELECT ib.*, b.title, u.name, u.email FROM issued_books ib JOIN books b ON ib.accession_number = b.accession_number JOIN users u ON ib.prn = u.prn WHERE ib.status = 1 AND ib.due_date < CURDATE()");
     $count = 0;
     while($row = mysqli_fetch_assoc($q)) {
-        $due = new DateTime($row['due_date']); $fine = ($due->diff(new DateTime())->days * $fine_rate);
+        $due = new DateTime($row['due_date']); $fine = getFairFine($row['due_date'], date('Y-m-d'), $connection);
         if (sendLibraryReminder($row['email'], $row['name'], $row['title'], date('d M Y', strtotime($row['due_date'])), true, $fine)) { $count++; }
     }
     $_SESSION['mail_msg'] = "Bulk reminders sent to $count students.";
@@ -156,11 +158,21 @@ if (isset($_POST['bulk_mail'])) {
                             $query = "SELECT ib.*, b.title, u.name as student_name FROM issued_books ib JOIN books b ON ib.accession_number = b.accession_number JOIN users u ON ib.prn = u.prn WHERE ib.status = 1 ORDER BY ib.due_date ASC";
                             $result = mysqli_query($connection, $query);
                             while ($row = mysqli_fetch_assoc($result)) {
-                                $today = new DateTime(); $due = new DateTime($row['due_date']);
+                                // $today = new DateTime(); $due = new DateTime($row['due_date']);
+                                // $is_overdue = ($today > $due);
+                                // $is_due_soon = (!$is_overdue && $today->diff($due)->days <= 2);
+                                // $row_class = $is_overdue ? 'overdue-row' : ($is_due_soon ? 'due-soon-row' : '');
+                                // $fine = $is_overdue ? ($due->diff($today)->days * $fine_rate) : 0;
+
+                                $today = new DateTime(); 
+                                $due = new DateTime($row['due_date']);
                                 $is_overdue = ($today > $due);
                                 $is_due_soon = (!$is_overdue && $today->diff($due)->days <= 2);
                                 $row_class = $is_overdue ? 'overdue-row' : ($is_due_soon ? 'due-soon-row' : '');
-                                $fine = $is_overdue ? ($due->diff($today)->days * $fine_rate) : 0;
+
+                                // NEW FAIR MATH:
+                                $fine = $is_overdue ? getFairFine($row['due_date'], date('Y-m-d'), $connection) : 0;
+
                             ?>
                             <tr class="<?php echo $row_class; ?>">
                                 <td class="pl-4"><code><?php echo $row['accession_number']; ?></code></td>
