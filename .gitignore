@@ -1,5 +1,5 @@
 # Ignore database config
-includes/config.php
+# includes/config.php
 # Ignore XAMPP/OS files
 .DS_Store
 Thumbs.db
